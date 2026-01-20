@@ -10,6 +10,8 @@
  * The app navigation resides in ./app/navigators, so head over there
  * if you're interested in adding screens and navigators.
  */
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
+
 if (__DEV__) {
   // Load Reactotron in development only.
   // Note that you must be using metro's `inlineRequires` for this to work.
@@ -31,6 +33,8 @@ import { ThemeProvider } from "./theme/context"
 import { customFontsToLoad } from "./theme/typography"
 import { loadDateFnsLocale } from "./utils/formatDate"
 import * as storage from "./utils/storage"
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { $styles } from "@/theme/styles";
 
 export const NAVIGATION_PERSISTENCE_KEY = "NAVIGATION_STATE"
 
@@ -93,16 +97,20 @@ export function App() {
 
   // otherwise, we're ready to render the app
   return (
+    <GestureHandlerRootView style={$styles.flex1}>
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <KeyboardProvider>
         <ThemeProvider>
+          <BottomSheetModalProvider>
           <AppNavigator
             linking={linking}
             initialState={initialNavigationState}
             onStateChange={onNavigationStateChange}
           />
+            </BottomSheetModalProvider>
         </ThemeProvider>
       </KeyboardProvider>
     </SafeAreaProvider>
+    </GestureHandlerRootView>
   )
 }

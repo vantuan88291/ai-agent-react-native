@@ -4,7 +4,7 @@ import { translate } from "@/i18n/translate"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
 
-import { Button, ButtonProps } from "./Button"
+import { ButtonProps } from "./Button"
 import { Text, TextProps } from "./Text"
 
 const sadFace = require("@assets/images/sad-face.png")
@@ -137,8 +137,6 @@ export function EmptyState(props: EmptyStateProps) {
   const {
     button = preset.button,
     buttonTx,
-    buttonOnPress,
-    buttonTxOptions,
     content = preset.content,
     contentTx,
     contentTxOptions,
@@ -148,7 +146,6 @@ export function EmptyState(props: EmptyStateProps) {
     imageSource = preset.imageSource,
     style: $containerStyleOverride,
     buttonStyle: $buttonStyleOverride,
-    buttonTextStyle: $buttonTextStyleOverride,
     contentStyle: $contentStyleOverride,
     headingStyle: $headingStyleOverride,
     imageStyle: $imageStyleOverride,
@@ -184,11 +181,6 @@ export function EmptyState(props: EmptyStateProps) {
     $contentStyleOverride,
     ContentTextProps?.style,
   ]
-  const $buttonStyles = [
-    (isImagePresent || isHeadingPresent || isContentPresent) && { marginTop: spacing.xl },
-    $buttonStyleOverride,
-    ButtonProps?.style,
-  ]
 
   return (
     <View style={$containerStyles}>
@@ -219,18 +211,6 @@ export function EmptyState(props: EmptyStateProps) {
           txOptions={contentTxOptions}
           {...ContentTextProps}
           style={$contentStyles}
-        />
-      )}
-
-      {isButtonPresent && (
-        <Button
-          onPress={buttonOnPress}
-          text={button}
-          tx={buttonTx}
-          txOptions={buttonTxOptions}
-          textStyle={$buttonTextStyleOverride}
-          {...ButtonProps}
-          style={$buttonStyles}
         />
       )}
     </View>
