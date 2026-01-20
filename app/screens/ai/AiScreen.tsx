@@ -33,6 +33,7 @@ export const AiScreen: FC<AppStackScreenProps<"ai">> = function AiScreen() {
     downloadProgress,
     setupModel,
     removeModel,
+    clearConversation,
     selectedModel,
     selectedModelId,
     selectedModelName,
@@ -49,6 +50,10 @@ export const AiScreen: FC<AppStackScreenProps<"ai">> = function AiScreen() {
   const handleRemoveModel = useCallback(async () => {
     await removeModel()
   }, [removeModel])
+
+  const handleClearConversation = useCallback(() => {
+    clearConversation()
+  }, [clearConversation])
 
   const { themed } = useAppTheme()
 
@@ -132,6 +137,7 @@ export const AiScreen: FC<AppStackScreenProps<"ai">> = function AiScreen() {
         model={selectedModel}
         modelStatus={modelStatus}
         onRemoveModel={handleRemoveModel}
+        onClearConversation={handleClearConversation}
       />
     </SafeAreaView>
   )

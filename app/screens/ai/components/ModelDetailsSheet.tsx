@@ -14,16 +14,24 @@ interface ModelDetailsSheetProps {
   model: ModelInfo | null
   modelStatus: "not_setup" | "downloading" | "preparing" | "ready"
   onRemoveModel: () => void
+  onClearConversation: () => void
 }
 
 export const ModelDetailsSheet = forwardRef<BottomSheetModal, ModelDetailsSheetProps>(
-  ({ model, modelStatus, onRemoveModel }, ref) => {
+  ({ model, modelStatus, onRemoveModel, onClearConversation }, ref) => {
     const { themed } = useAppTheme()
 
     if (!model) return null
 
     const handleRemove = () => {
       onRemoveModel()
+      if (ref && typeof ref !== "function" && "current" in ref) {
+        ref.current?.dismiss()
+      }
+    }
+
+    const handleClearConversation = () => {
+      onClearConversation()
       if (ref && typeof ref !== "function" && "current" in ref) {
         ref.current?.dismiss()
       }
@@ -62,6 +70,12 @@ export const ModelDetailsSheet = forwardRef<BottomSheetModal, ModelDetailsSheetP
 
           {modelStatus === "ready" && (
             <Box style={themed($buttonSection)}>
+              <Button
+                text="Clear Conversation"
+                preset="default"
+                onPress={handleClearConversation}
+                style={themed($clearButton)}
+              />
               <Button
                 text="Remove Model"
                 preset="reversed"
@@ -108,6 +122,12 @@ const $buttonSection: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   paddingTop: spacing.lg,
   borderTopWidth: 1,
   borderTopColor: "transparent",
+})
+
+const $clearButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  paddingVertical: spacing.md,
+  borderRadius: 8,
+  marginBottom: spacing.sm,
 })
 
 const $removeButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({

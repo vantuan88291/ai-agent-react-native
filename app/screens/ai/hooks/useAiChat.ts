@@ -6,6 +6,7 @@ import { streamText } from "ai"
 
 import { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { Message, ModelLoadingState, ModelStatus } from "@/screens/ai/hooks/models"
+import { load, remove, save } from "@/utils/storage"
 
 const SCROLL_THROTTLE_MS = 200
 const SCROLL_DEBOUNCE_MS = 100
@@ -22,7 +23,7 @@ const createMessage = (text: string, isUser: boolean): Message => ({
 export const useAiChat = () => {
   const route = useRoute<AppStackScreenProps<"ai">["route"]>()
   const model = route.params?.model
-  const modelId = model?.id || null
+  const modelId = model?.id
   const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputTextState] = useState("")
   const [modelStatus, setModelStatus] = useState<ModelStatus>("not_setup")
@@ -30,6 +31,7 @@ export const useAiChat = () => {
   const [selectedModelId, setSelectedModelId] = useState<string | null>(modelId)
   const [useContextHistory, setUseContextHistory] = useState<boolean>(true)
   const modelRef = useRef<any>(null)
+  const msgRef = useRef<any[]>([])
   const isSetupInProgressRef = useRef<boolean>(false)
   const isMountedRef = useRef<boolean>(true)
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -208,6 +210,7 @@ export const useAiChat = () => {
       // Create model instance to call remove
       const model = llama.languageModel(selectedModelId)
 
+      remove(modelId)
       // Remove model from device
       await model.remove()
 
@@ -247,6 +250,24 @@ export const useAiChat = () => {
     },
     [selectedModelId, modelStatus, removeModel],
   )
+
+  /**
+   * Clear all conversation messages
+   */
+  const clearConversation = useCallback(() => {
+    if (!modelId) return
+
+    // Clear messages state
+    setMessages([])
+    msgRef.current = []
+
+    // Remove conversation from storage
+    try {
+      remove(modelId)
+    } catch (error) {
+      console.error("[useAiChat] Error clearing conversation:", error)
+    }
+  }, [modelId])
 
   /**
    * Setup and download model
@@ -373,13 +394,25 @@ export const useAiChat = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modelId]) // Run when modelId changes
 
+  useEffect(() => {
+    msgRef.current = messages
+  }, [messages.map((item) => item.text)])
   /**
    * Cleanup: unload model on unmount
    */
   useEffect(() => {
     isMountedRef.current = true
+    // @ts-ignore
+    const listMsg: any[] = load(modelId)
+    if (listMsg?.length) {
+      setMessages(listMsg)
+    }
 
     return () => {
+      if (msgRef.current?.length) {
+        save(modelId, msgRef.current)
+      }
+      msgRef.current = []
       isMountedRef.current = false
 
       // Abort any ongoing stream
@@ -426,6 +459,7 @@ export const useAiChat = () => {
     setupModel,
     removeModel,
     removeModelById,
+    clearConversation,
     selectedModel: model || null,
     selectedModelId,
     selectedModelName,
