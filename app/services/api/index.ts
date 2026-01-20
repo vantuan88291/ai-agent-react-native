@@ -44,3 +44,16 @@ export class Api {
 
 // Singleton instance of the API for convenience
 export const api = new Api()
+
+/**
+ * Fetch AI models from API
+ */
+export const fetchAiModels = async () => {
+  try {
+    const response = await api.apisauce.get("tenants?filters[name][$eq]=ai&populate[data]=*")
+    return response
+  } catch (error) {
+    console.error("[API] Error fetching AI models:", error)
+    return null
+  }
+}

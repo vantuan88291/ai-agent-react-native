@@ -1,5 +1,13 @@
-import { FC, useCallback, useMemo, useState } from "react"
-import { FlatList, ListRenderItem, TextStyle, TouchableOpacity, ViewStyle } from "react-native"
+import { FC, useCallback } from "react"
+import {
+  ActivityIndicator,
+  FlatList,
+  ListRenderItem,
+  RefreshControl,
+  TextStyle,
+  TouchableOpacity,
+  ViewStyle,
+} from "react-native"
 import { useNavigation } from "@react-navigation/native"
 
 import { Box } from "@/components/Box"
@@ -9,48 +17,18 @@ import { Row } from "@/components/Row"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import { AppStackScreenProps } from "@/navigators/navigationTypes"
-import { AVAILABLE_MODELS, ModelInfo } from "@/screens/ai/hooks/models"
+import { ModelInfo } from "@/screens/ai/hooks/models"
 import { useAppTheme } from "@/theme/context"
 import { spacing } from "@/theme/spacing"
 import { $styles } from "@/theme/styles"
 import type { ThemedStyle } from "@/theme/types"
-const parseSizeToBytes = (sizeStr: string): number => {
-  const normalized = sizeStr.trim().toUpperCase()
-  const match = normalized.match(/^([\d.]+)\s*(KB|MB|GB)?$/i)
-  if (!match) return 0
 
-  const value = parseFloat(match[1])
-  const unit = match[2] || ""
+import { useModels } from "./hooks/useModels"
 
-  switch (unit) {
-    case "GB":
-      return value * 1024 * 1024 * 1024
-    case "MB":
-      return value * 1024 * 1024
-    case "KB":
-      return value * 1024
-    default:
-      // If no unit, assume MB
-      return value * 1024 * 1024
-  }
-}
 export const WelcomeScreen: FC<AppStackScreenProps<"Welcome">> = function WelcomeScreen() {
   const { themed, theme } = useAppTheme()
   const navigation = useNavigation<AppStackScreenProps<"Welcome">["navigation"]>()
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
-
-  const sortedModels = useMemo(() => {
-    const sorted = [...AVAILABLE_MODELS].sort((a, b) => {
-      const sizeA = parseSizeToBytes(a.size)
-      const sizeB = parseSizeToBytes(b.size)
-      return sortOrder === "asc" ? sizeA - sizeB : sizeB - sizeA
-    })
-    return sorted
-  }, [sortOrder])
-
-  const toggleSortOrder = useCallback(() => {
-    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))
-  }, [])
+  const { models, isLoading, isRefreshing, sortOrder, toggleSortOrder, refresh } = useModels()
 
   const handleSelectModel = useCallback(
     (model: ModelInfo) => {
@@ -89,13 +67,26 @@ export const WelcomeScreen: FC<AppStackScreenProps<"Welcome">> = function Welcom
         rightIcon={sortOrder === "asc" ? "sortUp" : "sortDown"}
         onRightPress={toggleSortOrder}
       />
-      <FlatList
-        data={sortedModels}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        contentContainerStyle={themed($listContent)}
-        showsVerticalScrollIndicator={true}
-      />
+      {isLoading ? (
+        <Box style={themed($loadingContainer)}>
+          <ActivityIndicator size="large" color={theme.colors.tint} />
+        </Box>
+      ) : (
+        <FlatList
+          data={models}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          contentContainerStyle={themed($listContent)}
+          showsVerticalScrollIndicator={true}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={refresh}
+              tintColor={theme.colors.tint}
+            />
+          }
+        />
+      )}
     </Screen>
   )
 }
@@ -131,4 +122,10 @@ const $modelInfo: ThemedStyle<ViewStyle> = ({ spacing }) => ({
 
 const $modelSize: ThemedStyle<TextStyle> = ({ colors }) => ({
   color: colors.textDim,
+})
+
+const $loadingContainer: ThemedStyle<ViewStyle> = () => ({
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
 })
