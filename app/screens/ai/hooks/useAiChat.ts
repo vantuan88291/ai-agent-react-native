@@ -1,71 +1,17 @@
 import { useCallback, useRef, useState, useEffect, useMemo } from "react"
 import { FlatList } from "react-native"
 import { llama } from "@react-native-ai/llama"
+import { useRoute } from "@react-navigation/native"
 import { streamText } from "ai"
 
-import {
-  Message,
-  ModelLoadingState,
-  ModelStatus,
-  AVAILABLE_MODELS,
-  ModelInfo,
-} from "@/screens/ai/hooks/models"
-import { loadString, remove, saveString } from "@/utils/storage";
+import { AppStackScreenProps } from "@/navigators/navigationTypes"
+import { Message, ModelLoadingState, ModelStatus } from "@/screens/ai/hooks/models"
 
-const STORAGE_KEY_SELECTED_MODEL = "ai_selected_model_id"
 const SCROLL_THROTTLE_MS = 200
 const SCROLL_DEBOUNCE_MS = 100
 
 const ERROR_MESSAGE = "Sorry, an error occurred. Please try again."
 
-/**
- * Parse size string to bytes for comparison
- * Examples: "1.04 MB" -> 1090519, "2.39GB" -> 2566914048
- */
-const parseSizeToBytes = (sizeStr: string): number => {
-  const normalized = sizeStr.trim().toUpperCase()
-  const match = normalized.match(/^([\d.]+)\s*(KB|MB|GB)?$/i)
-  if (!match) return 0
-
-  const value = parseFloat(match[1])
-  const unit = match[2] || ""
-
-  switch (unit) {
-    case "GB":
-      return value * 1024 * 1024 * 1024
-    case "MB":
-      return value * 1024 * 1024
-    case "KB":
-      return value * 1024
-    default:
-      // If no unit, assume MB
-      return value * 1024 * 1024
-  }
-}
-
-/**
- * Sort models by size (ascending) and move selected model to the top
- */
-const sortModels = (models: ModelInfo[], selectedModelId: string | null): ModelInfo[] => {
-  // Separate selected model from others
-  const selectedModel = selectedModelId ? models.find((m) => m.id === selectedModelId) : null
-  const otherModels = selectedModelId ? models.filter((m) => m.id !== selectedModelId) : models
-
-  // Sort by size (ascending)
-  const sorted = [...otherModels].sort((a, b) => {
-    const sizeA = parseSizeToBytes(a.size)
-    const sizeB = parseSizeToBytes(b.size)
-    return sizeA - sizeB
-  })
-
-  // Put selected model at the top if it exists
-  return selectedModel ? [selectedModel, ...sorted] : sorted
-}
-
-/**
- * Hook to manage AI chat state and logic
- * @returns An object containing messages, input text, handlers, and loading state
- */
 const createMessage = (text: string, isUser: boolean): Message => ({
   id: `${Date.now()}-${Math.random()}`,
   text,
@@ -74,11 +20,14 @@ const createMessage = (text: string, isUser: boolean): Message => ({
 })
 
 export const useAiChat = () => {
+  const route = useRoute<AppStackScreenProps<"ai">["route"]>()
+  const model = route.params?.model
+  const modelId = model?.id || null
   const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputTextState] = useState("")
   const [modelStatus, setModelStatus] = useState<ModelStatus>("not_setup")
   const [downloadProgress, setDownloadProgress] = useState<number>(0)
-  const [selectedModelId, setSelectedModelId] = useState<string | null>(null)
+  const [selectedModelId, setSelectedModelId] = useState<string | null>(modelId)
   const [useContextHistory, setUseContextHistory] = useState<boolean>(true)
   const modelRef = useRef<any>(null)
   const isSetupInProgressRef = useRef<boolean>(false)
@@ -221,10 +170,6 @@ export const useAiChat = () => {
           // Model is ready!
           modelRef.current = model
           setSelectedModelId(modelToCheck)
-
-          // Save selected model ID to storage
-          saveString(STORAGE_KEY_SELECTED_MODEL, modelToCheck)
-
           setModelStatus("ready")
           return true
         }
@@ -269,9 +214,6 @@ export const useAiChat = () => {
       setModelStatus("not_setup")
       setDownloadProgress(0)
       setSelectedModelId(null)
-
-      // Remove from storage
-      remove(STORAGE_KEY_SELECTED_MODEL)
     } catch (error) {
       console.error("[useAiChat] Error removing model:", error)
       // TODO: Handle error - maybe show error message to user
@@ -294,9 +236,8 @@ export const useAiChat = () => {
         const model = llama.languageModel(modelId)
         await model.remove()
 
-        // If removing the saved model, also clear storage
+        // If removing the saved model, clear state
         if (modelId === selectedModelId) {
-          remove(STORAGE_KEY_SELECTED_MODEL)
           setSelectedModelId(null)
           setModelStatus("not_setup")
         }
@@ -385,9 +326,6 @@ export const useAiChat = () => {
           modelRef.current = model
           setSelectedModelId(modelId)
           setModelStatus("ready")
-
-          // Save selected model ID to storage
-          saveString(STORAGE_KEY_SELECTED_MODEL, modelId)
         }
       } catch (error) {
         console.error("[useAiChat] Error setting up model:", error)
@@ -403,20 +341,37 @@ export const useAiChat = () => {
   )
 
   /**
-   * Load saved model and check on mount
+   * Load model from navigation params and check on mount
    */
   useEffect(() => {
-    const savedModelId = loadString(STORAGE_KEY_SELECTED_MODEL)
-    if (savedModelId && isMountedRef.current) {
-      // Load model ID from storage and check if it exists
-      checkModelExists(savedModelId).catch((error) => {
-        if (isMountedRef.current) {
-          console.error("[useAiChat] Error checking saved model:", error)
-        }
-      })
+    if (!isMountedRef.current) return
+
+    // If modelId from params, check if it exists
+    if (modelId) {
+      // Set selectedModelId to the modelId from params
+      setSelectedModelId(modelId)
+
+      // Check if model is already downloaded
+      checkModelExists(modelId)
+        .then((exists) => {
+          // If model doesn't exist, set status to not_setup
+          // This will show the setup button in ChatInput
+          if (!exists && isMountedRef.current) {
+            setModelStatus("not_setup")
+          }
+        })
+        .catch((error) => {
+          if (isMountedRef.current) {
+            console.error("[useAiChat] Error checking model from params:", error)
+            setModelStatus("not_setup")
+          }
+        })
+    } else {
+      // If no modelId provided, set to not_setup
+      setModelStatus("not_setup")
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Only run once on mount - checkModelExists is stable
+  }, [modelId]) // Run when modelId changes
 
   /**
    * Cleanup: unload model on unmount
@@ -453,17 +408,10 @@ export const useAiChat = () => {
   const modelLoadingState: ModelLoadingState =
     modelStatus === "downloading" || modelStatus === "preparing" ? modelStatus : "idle"
 
-  // Sort models by size and move selected model to top
-  const sortedModels = useMemo(() => {
-    return sortModels(AVAILABLE_MODELS, selectedModelId)
-  }, [selectedModelId])
-
-  // Get selected model name
+  // Get selected model name from route params
   const selectedModelName = useMemo(() => {
-    if (!selectedModelId) return null
-    const model = AVAILABLE_MODELS.find((m) => m.id === selectedModelId)
     return model?.name || null
-  }, [selectedModelId])
+  }, [model])
 
   return {
     messages,
@@ -478,11 +426,11 @@ export const useAiChat = () => {
     setupModel,
     removeModel,
     removeModelById,
+    selectedModel: model || null,
     selectedModelId,
     selectedModelName,
     useContextHistory,
     setUseContextHistory,
     model: modelRef.current,
-    sortedModels,
   }
 }

@@ -1,4 +1,5 @@
 export { ChatInput } from "./ChatInput"
 export { MessageItem } from "./MessageItem"
+export { ModelDetailsSheet } from "./ModelDetailsSheet"
 export { ModelLoading } from "./ModelLoading"
 export { ModelListSheet } from "./ModelListSheet"

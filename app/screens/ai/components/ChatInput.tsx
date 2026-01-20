@@ -42,7 +42,7 @@ export const ChatInput = ({
           <Button
             onPress={onSetupModelPress}
             preset="filled"
-            text="Setup AI Model"
+            text="Download AI Model"
             style={themed($setupButton)}
           />
         </Row>

@@ -2,22 +2,26 @@ import { FC, useRef, useCallback, useMemo } from "react"
 import { FlatList, ListRenderItem, View } from "react-native"
 import { ViewStyle } from "react-native"
 import { BottomSheetModal } from "@gorhom/bottom-sheet"
+import { useNavigation } from "@react-navigation/native"
 import { KeyboardAvoidingView } from "react-native-keyboard-controller"
 import { SafeAreaView } from "react-native-safe-area-context"
 
 import { Box } from "@/components/Box"
 import { EmptyState } from "@/components/EmptyState"
 import { Header } from "@/components/Header"
-import { Message, ModelInfo } from "@/screens/ai/hooks/models"
+import { AppStackScreenProps } from "@/navigators/navigationTypes"
+import { Message } from "@/screens/ai/hooks/models"
 import { useAppTheme } from "@/theme/context"
 import { $styles } from "@/theme/styles"
 import type { ThemedStyle } from "@/theme/types"
 
-import { ChatInput, MessageItem, ModelLoading, ModelListSheet } from "./components"
+import { ChatInput, MessageItem, ModelDetailsSheet, ModelLoading } from "./components"
 import { useAiChat } from "./hooks/useAiChat"
 
-export const AiScreen: FC = function AiScreen() {
-  const modelSheetRef = useRef<BottomSheetModal>(null)
+export const AiScreen: FC<AppStackScreenProps<"ai">> = function AiScreen() {
+  const navigation = useNavigation<AppStackScreenProps<"ai">["navigation"]>()
+  const modelDetailsSheetRef = useRef<BottomSheetModal>(null)
+
   const {
     messages,
     inputText,
@@ -28,33 +32,23 @@ export const AiScreen: FC = function AiScreen() {
     modelLoadingState,
     downloadProgress,
     setupModel,
-    removeModelById,
+    removeModel,
+    selectedModel,
     selectedModelId,
     selectedModelName,
     useContextHistory,
     setUseContextHistory,
-    sortedModels,
   } = useAiChat()
 
-  const handleSelectModel = useCallback(
-    (model: ModelInfo) => {
-      modelSheetRef.current?.dismiss()
-      if (model.id !== selectedModelId) setupModel(model.id)
-    },
-    [setupModel, selectedModelId],
-  )
-
-  const handleRemoveSpecificModel = useCallback(
-    async (modelId: string) => {
-      modelSheetRef.current?.dismiss()
-      await removeModelById(modelId)
-    },
-    [removeModelById],
-  )
-
-  const handleOpenModelSheet = useCallback(() => {
-    if (modelLoadingState === "idle") modelSheetRef.current?.present()
+  const handleOpenModelDetails = useCallback(() => {
+    if (modelLoadingState === "idle") {
+      modelDetailsSheetRef.current?.present()
+    }
   }, [modelLoadingState])
+
+  const handleRemoveModel = useCallback(async () => {
+    await removeModel()
+  }, [removeModel])
 
   const { themed } = useAppTheme()
 
@@ -86,8 +80,10 @@ export const AiScreen: FC = function AiScreen() {
       <View style={themed($screen)}>
         <Header
           title="AI Assistant"
-          rightIcon={!isModelLoading ? "settings" : undefined}
-          onRightPress={!isModelLoading ? handleOpenModelSheet : undefined}
+          leftIcon="back"
+          onLeftPress={() => navigation.goBack()}
+          rightIcon={!isModelLoading ? "more" : undefined}
+          onRightPress={!isModelLoading ? handleOpenModelDetails : undefined}
         />
         <KeyboardAvoidingView
           behavior="translate-with-padding"
@@ -117,7 +113,11 @@ export const AiScreen: FC = function AiScreen() {
                   setInputText={setInputText}
                   handleSend={handleSend}
                   modelStatus={modelStatus}
-                  onSetupModelPress={handleOpenModelSheet}
+                  onSetupModelPress={() => {
+                    if (selectedModelId) {
+                      setupModel(selectedModelId)
+                    }
+                  }}
                   useContextHistory={useContextHistory}
                   onToggleContextHistory={setUseContextHistory}
                 />
@@ -127,12 +127,11 @@ export const AiScreen: FC = function AiScreen() {
         </KeyboardAvoidingView>
       </View>
 
-      <ModelListSheet
-        ref={modelSheetRef}
-        selectedModelId={selectedModelId}
-        sortedModels={sortedModels}
-        onSelectModel={handleSelectModel}
-        onRemoveModel={handleRemoveSpecificModel}
+      <ModelDetailsSheet
+        ref={modelDetailsSheetRef}
+        model={selectedModel}
+        modelStatus={modelStatus}
+        onRemoveModel={handleRemoveModel}
       />
     </SafeAreaView>
   )

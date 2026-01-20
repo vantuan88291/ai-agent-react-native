@@ -31,7 +31,7 @@ export const ModelLoading = ({ modelLoadingState, downloadProgress }: ModelLoadi
   return (
     <Box
       backgroundColor={theme.colors.background}
-      style={[themed($loadingInputContainer), { paddingBottom: insets.bottom + 20 }]}
+      style={[themed($loadingInputContainer), { paddingBottom: insets.bottom }]}
     >
       <Row style={themed($loadingInputRow)} gap={spacing.md} alignItems="center">
         <ActivityIndicator size="small" color={theme.colors.tint} />

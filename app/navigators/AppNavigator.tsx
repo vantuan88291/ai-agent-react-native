@@ -40,8 +40,8 @@ const AppStack = () => {
         },
       }}
     >
-      <Stack.Screen name="ai" component={AiScreen} />
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
+      <Stack.Screen name="ai" component={AiScreen} />
       {/** 🔥 Your screens go here */}
       {/* IGNITE_GENERATOR_ANCHOR_APP_STACK_SCREENS */}
     </Stack.Navigator>

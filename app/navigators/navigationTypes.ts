@@ -15,10 +15,12 @@ export type DemoTabParamList = {
   DemoPodcastList: undefined
 }
 
+import { ModelInfo } from "@/screens/ai/hooks/models"
+
 // App Stack Navigator types
 export type AppStackParamList = {
   Welcome: undefined
-  ai: undefined
+  ai: { model: ModelInfo }
   Demo: NavigatorScreenParams<DemoTabParamList>
   // 🔥 Your screens go here
   // IGNITE_GENERATOR_ANCHOR_APP_STACK_PARAM_LIST
