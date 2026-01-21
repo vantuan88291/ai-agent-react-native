@@ -1,5 +1,6 @@
 import { FC } from "react"
 import { TextStyle, View, ViewStyle } from "react-native"
+import Markdown from "react-native-markdown-display"
 
 import { Box } from "@/components/Box"
 import { Text } from "@/components/Text"
@@ -14,7 +15,7 @@ interface MessageItemProps {
 
 export const MessageItem: FC<MessageItemProps> = ({ message, modelName }) => {
   const isUser = message.isUser
-  const { themed } = useAppTheme()
+  const { themed, theme } = useAppTheme()
 
   return (
     <View
@@ -27,13 +28,19 @@ export const MessageItem: FC<MessageItemProps> = ({ message, modelName }) => {
         {!isUser && modelName && (
           <Text text={modelName} size="xxs" numberOfLines={1} style={themed($modelName)} />
         )}
-        <Text
-          text={message.text || "..."}
-          preset="default"
-          size="md"
-          selectable
-          style={[themed($messageText), isUser ? themed($userMessageText) : themed($aiMessageText)]}
-        />
+        {isUser ? (
+          <Text
+            text={message.text || "Thinking..."}
+            preset="default"
+            size="md"
+            selectable
+            style={[themed($messageText), themed($userMessageText)]}
+          />
+        ) : (
+          <Markdown style={$markdownStyles(theme)} mergeStyle={false}>
+            {message.text || "..."}
+          </Markdown>
+        )}
       </Box>
     </View>
   )
@@ -60,6 +67,8 @@ const $messageBubble: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   paddingVertical: spacing.sm,
   minWidth: 100,
   maxWidth: "100%",
+  flexShrink: 1,
+  width: "100%",
 })
 
 const $userBubble: ThemedStyle<ViewStyle> = ({ colors }) => ({
@@ -92,11 +101,121 @@ const $userMessageText: ThemedStyle<TextStyle> = ({ colors }) => ({
   color: colors.palette.neutral100,
 })
 
-const $aiMessageText: ThemedStyle<TextStyle> = ({ colors }) => ({
-  color: colors.text,
-})
-
 const $modelName: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
   marginBottom: spacing.xxs,
   color: colors.tint,
+})
+
+const $markdownStyles = (theme: any) => ({
+  body: {
+    color: theme.colors.text,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  paragraph: {
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  heading1: {
+    color: theme.colors.text,
+    fontSize: 16,
+    fontWeight: "bold" as const,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  heading2: {
+    color: theme.colors.text,
+    fontSize: 16,
+    fontWeight: "bold" as const,
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  heading3: {
+    color: theme.colors.text,
+    fontSize: 18,
+    fontWeight: "600" as const,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  code_inline: {
+    backgroundColor: theme.colors.palette.neutral200,
+    color: theme.colors.text,
+    fontSize: 13,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+    fontFamily: "monospace",
+  },
+  code_block: {
+    backgroundColor: theme.colors.palette.neutral200,
+    color: theme.colors.text,
+    fontSize: 13,
+    padding: 12,
+    borderRadius: 8,
+    marginVertical: 8,
+    fontFamily: "monospace",
+  },
+  fence: {
+    backgroundColor: theme.colors.palette.neutral200,
+    color: theme.colors.text,
+    fontSize: 14,
+    padding: 12,
+    borderRadius: 8,
+    marginVertical: 8,
+    fontFamily: "monospace",
+  },
+  link: {
+    color: theme.colors.tint,
+    textDecorationLine: "underline" as const,
+  },
+  list_item: {
+    marginBottom: 4,
+  },
+  bullet_list: {
+    marginVertical: 8,
+  },
+  ordered_list: {
+    marginVertical: 8,
+  },
+  blockquote: {
+    backgroundColor: theme.colors.palette.neutral200,
+    borderLeftWidth: 4,
+    borderLeftColor: theme.colors.tint,
+    paddingLeft: 12,
+    paddingVertical: 8,
+    marginVertical: 8,
+    fontStyle: "italic" as const,
+  },
+  strong: {
+    fontWeight: "bold" as const,
+    color: theme.colors.text,
+  },
+  em: {
+    fontStyle: "italic" as const,
+  },
+  hr: {
+    backgroundColor: theme.colors.separator,
+    height: 1,
+    marginVertical: 12,
+  },
+  table: {
+    borderWidth: 1,
+    borderColor: theme.colors.separator,
+    borderRadius: 8,
+    marginVertical: 8,
+  },
+  thead: {
+    backgroundColor: theme.colors.palette.neutral200,
+  },
+  th: {
+    borderWidth: 1,
+    borderColor: theme.colors.separator,
+    padding: 8,
+    fontWeight: "bold" as const,
+  },
+  td: {
+    borderWidth: 1,
+    borderColor: theme.colors.separator,
+    padding: 8,
+  },
 })
