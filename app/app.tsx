@@ -23,6 +23,7 @@ import "./utils/gestureHandler"
 import { useEffect, useState } from "react"
 import { useFonts } from "expo-font"
 import * as Linking from "expo-linking"
+import DropdownAlert, { DropdownAlertData } from "react-native-dropdownalert"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { KeyboardProvider } from "react-native-keyboard-controller"
 import { initialWindowMetrics, SafeAreaProvider } from "react-native-safe-area-context"
@@ -31,13 +32,9 @@ import { $styles } from "@/theme/styles"
 
 import { initI18n } from "./i18n"
 import { AppNavigator } from "./navigators/AppNavigator"
-import { useNavigationPersistence } from "./navigators/navigationUtilities"
 import { ThemeProvider } from "./theme/context"
 import { customFontsToLoad } from "./theme/typography"
 import { loadDateFnsLocale } from "./utils/formatDate"
-import * as storage from "./utils/storage"
-
-export const NAVIGATION_PERSISTENCE_KEY = "NAVIGATION_STATE"
 
 // Web linking configuration
 const prefix = Linking.createURL("/")
@@ -65,13 +62,9 @@ const config = {
  * @param {AppProps} props - The props for the `App` component.
  * @returns {JSX.Element} The rendered `App` component.
  */
-export function App() {
-  const {
-    initialNavigationState,
-    onNavigationStateChange,
-    isRestored: isNavigationStateRestored,
-  } = useNavigationPersistence(storage, NAVIGATION_PERSISTENCE_KEY)
+export let onAlert = (_data: DropdownAlertData) => new Promise<DropdownAlertData>((res) => res)
 
+export function App() {
   const [areFontsLoaded, fontLoadError] = useFonts(customFontsToLoad)
   const [isI18nInitialized, setIsI18nInitialized] = useState(false)
 
@@ -87,7 +80,7 @@ export function App() {
   // In iOS: application:didFinishLaunchingWithOptions:
   // In Android: https://stackoverflow.com/a/45838109/204044
   // You can replace with your own loading component if you wish.
-  if (!isNavigationStateRestored || !isI18nInitialized || (!areFontsLoaded && !fontLoadError)) {
+  if (!isI18nInitialized || (!areFontsLoaded && !fontLoadError)) {
     return null
   }
 
@@ -104,6 +97,7 @@ export function App() {
           <ThemeProvider>
             <BottomSheetModalProvider>
               <AppNavigator linking={linking} />
+              <DropdownAlert alert={(func) => (onAlert = func)} />
             </BottomSheetModalProvider>
           </ThemeProvider>
         </KeyboardProvider>

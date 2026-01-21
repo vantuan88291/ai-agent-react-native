@@ -3,7 +3,9 @@ import { FlatList } from "react-native"
 import { llama } from "@react-native-ai/llama"
 import { useRoute } from "@react-navigation/native"
 import { streamText } from "ai"
+import { DropdownAlertType } from "react-native-dropdownalert"
 
+import { onAlert } from "@/app"
 import { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { Message, ModelLoadingState, ModelStatus } from "@/screens/ai/hooks/models"
 import { load, remove, save } from "@/utils/storage"
@@ -181,7 +183,16 @@ export const useAiChat = () => {
         return false
       } catch (error) {
         // Error checking or preparing model
-        console.log("[useAiChat] Error checking model:", error)
+        console.error("[useAiChat] Error checking model:", error)
+        const errorMessage = error instanceof Error ? error.message : "Failed to check model"
+        // @ts-ignore
+        const model = llama.languageModel(modelId)
+        model.remove()
+        onAlert({
+          type: DropdownAlertType.Error,
+          title: "Model Error",
+          message: `Failed to check model: ${errorMessage}`,
+        })
         return false
       }
     },
@@ -351,6 +362,15 @@ export const useAiChat = () => {
         }
       } catch (error) {
         console.error("[useAiChat] Error setting up model:", error)
+        const errorMessage = error instanceof Error ? error.message : "Failed to setup model"
+
+        // Determine error type based on current status
+        onAlert({
+          type: DropdownAlertType.Error,
+          title: `${modelStatus} Error`,
+          message: `Failed to download model: ${errorMessage}`,
+        })
+
         if (isMountedRef.current) {
           setModelStatus("not_setup")
           setDownloadProgress(0)
