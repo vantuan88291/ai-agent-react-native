@@ -193,6 +193,45 @@ export const useModels = () => {
     [checkAllModels],
   )
 
+  // Calculate statistics
+  const stats = useMemo(() => {
+    const totalModels = sortedModels.length
+    const downloadedCount = sortedModels.filter((model) => downloadedModels.has(model.id)).length
+
+    // Calculate total size
+    let totalSizeBytes = 0
+    sortedModels.forEach((model) => {
+      totalSizeBytes += parseSizeToBytes(model.size)
+    })
+
+    // Calculate downloaded size
+    let downloadedSizeBytes = 0
+    sortedModels.forEach((model) => {
+      if (downloadedModels.has(model.id)) {
+        downloadedSizeBytes += parseSizeToBytes(model.size)
+      }
+    })
+
+    // Format sizes
+    const formatSize = (bytes: number): string => {
+      if (bytes >= 1024 * 1024 * 1024) {
+        return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
+      } else if (bytes >= 1024 * 1024) {
+        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
+      } else if (bytes >= 1024) {
+        return `${(bytes / 1024).toFixed(2)} KB`
+      }
+      return `${bytes} B`
+    }
+
+    return {
+      totalModels,
+      downloadedCount,
+      totalSize: formatSize(totalSizeBytes),
+      downloadedSize: formatSize(downloadedSizeBytes),
+    }
+  }, [sortedModels, downloadedModels])
+
   return {
     models: sortedModels,
     isLoading: false,
@@ -203,5 +242,6 @@ export const useModels = () => {
     isModelDownloaded,
     refreshDownloadStatus,
     removeModel,
+    stats,
   }
 }

@@ -1,5 +1,6 @@
-import { FC, useCallback } from "react"
+import { FC, useCallback, useRef } from "react"
 import { ActivityIndicator, FlatList, ListRenderItem, RefreshControl, ViewStyle } from "react-native"
+import { BottomSheetModal } from "@gorhom/bottom-sheet"
 import { useFocusEffect, useNavigation } from "@react-navigation/native"
 
 import { Box } from "@/components/Box"
@@ -11,12 +12,13 @@ import { useAppTheme } from "@/theme/context"
 import { $styles } from "@/theme/styles"
 import type { ThemedStyle } from "@/theme/types"
 
-import { ModelItem } from "./components"
+import { ModelItem, StatsSheet } from "./components"
 import { useModels } from "./hooks/useModels"
 
 export const WelcomeScreen: FC<AppStackScreenProps<"Welcome">> = function WelcomeScreen() {
   const { themed, theme } = useAppTheme()
   const navigation = useNavigation<AppStackScreenProps<"Welcome">["navigation"]>()
+  const statsSheetRef = useRef<BottomSheetModal>(null)
   const {
     models,
     isLoading,
@@ -27,6 +29,7 @@ export const WelcomeScreen: FC<AppStackScreenProps<"Welcome">> = function Welcom
     isModelDownloaded,
     refreshDownloadStatus,
     removeModel,
+    stats,
   } = useModels()
 
   // Refresh download status when screen comes into focus
@@ -55,6 +58,10 @@ export const WelcomeScreen: FC<AppStackScreenProps<"Welcome">> = function Welcom
     [removeModel],
   )
 
+  const handleOpenStats = useCallback(() => {
+    statsSheetRef.current?.present()
+  }, [])
+
   const renderItem: ListRenderItem<ModelInfo> = useCallback(
     ({ item }) => (
       <ModelItem
@@ -73,8 +80,10 @@ export const WelcomeScreen: FC<AppStackScreenProps<"Welcome">> = function Welcom
     <Screen preset="fixed" contentContainerStyle={$styles.flex1}>
       <Header
         title="AI Models"
-        rightIcon={sortOrder === "asc" ? "sortUp" : "sortDown"}
-        onRightPress={toggleSortOrder}
+        leftIcon={sortOrder === "asc" ? "sortUp" : "sortDown"}
+        onLeftPress={toggleSortOrder}
+        rightIcon="menu"
+        onRightPress={handleOpenStats}
       />
       {isLoading ? (
         <Box style={themed($loadingContainer)}>
@@ -96,6 +105,14 @@ export const WelcomeScreen: FC<AppStackScreenProps<"Welcome">> = function Welcom
           }
         />
       )}
+
+      <StatsSheet
+        ref={statsSheetRef}
+        totalModels={stats.totalModels}
+        downloadedCount={stats.downloadedCount}
+        totalSize={stats.totalSize}
+        downloadedSize={stats.downloadedSize}
+      />
     </Screen>
   )
 }
