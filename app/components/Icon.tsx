@@ -126,6 +126,7 @@ export const iconRegistry = {
   send: require("@assets/icons/send.png"),
   sortUp: require("@assets/icons/sort-up.png"),
   sortDown: require("@assets/icons/sort-down.png"),
+  expand: require("@assets/icons/expand.png"),
 }
 
 const $imageStyleBase: ImageStyle = {

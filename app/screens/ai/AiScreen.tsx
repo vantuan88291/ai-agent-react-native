@@ -55,13 +55,27 @@ export const AiScreen: FC<AppStackScreenProps<"ai">> = function AiScreen() {
     clearConversation()
   }, [clearConversation])
 
+  const handleViewFullMessage = useCallback(
+    (message: Message) => {
+      navigation.navigate("FullMessage", {
+        message: message.text || "",
+        modelName: selectedModelName || undefined,
+      })
+    },
+    [navigation, selectedModelName],
+  )
+
   const { themed } = useAppTheme()
 
   const renderMessage = useCallback<ListRenderItem<Message>>(
     ({ item }) => (
-      <MessageItem message={item} modelName={!item.isUser ? selectedModelName : undefined} />
+      <MessageItem
+        message={item}
+        modelName={!item.isUser ? selectedModelName : undefined}
+        onViewFullMessage={!item.isUser ? handleViewFullMessage : undefined}
+      />
     ),
-    [selectedModelName],
+    [selectedModelName, handleViewFullMessage],
   )
 
   const keyExtractor = useCallback((item: Message) => item.id, [])

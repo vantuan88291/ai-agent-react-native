@@ -10,6 +10,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import Config from "@/config"
 import { AiScreen } from "@/screens/ai/AiScreen"
 import { ErrorBoundary } from "@/screens/ErrorScreen/ErrorBoundary"
+import { FullMessageScreen } from "@/screens/FullMessageScreen/FullMessageScreen"
 import { WelcomeScreen } from "@/screens/WelcomeScreen/WelcomeScreen"
 import { useAppTheme } from "@/theme/context"
 
@@ -42,6 +43,7 @@ const AppStack = () => {
     >
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="ai" component={AiScreen} />
+      <Stack.Screen name="FullMessage" component={FullMessageScreen} />
       {/** 🔥 Your screens go here */}
       {/* IGNITE_GENERATOR_ANCHOR_APP_STACK_SCREENS */}
     </Stack.Navigator>

@@ -2,6 +2,7 @@ import { FC } from "react"
 import { TextStyle, View, ViewStyle } from "react-native"
 
 import { Box } from "@/components/Box"
+import { PressableIcon } from "@/components/Icon"
 import { Text } from "@/components/Text"
 import { Message } from "@/screens/ai/hooks/models"
 import { useAppTheme } from "@/theme/context"
@@ -10,11 +11,12 @@ import type { ThemedStyle } from "@/theme/types"
 interface MessageItemProps {
   message: Message
   modelName?: string | null
+  onViewFullMessage?: (message: Message) => void
 }
 
-export const MessageItem: FC<MessageItemProps> = ({ message, modelName }) => {
+export const MessageItem: FC<MessageItemProps> = ({ message, modelName, onViewFullMessage }) => {
   const isUser = message.isUser
-  const { themed } = useAppTheme()
+  const { themed, theme } = useAppTheme()
 
   return (
     <View
@@ -34,6 +36,15 @@ export const MessageItem: FC<MessageItemProps> = ({ message, modelName }) => {
           selectable
           style={[themed($messageText), isUser ? themed($userMessageText) : themed($aiMessageText)]}
         />
+        {!isUser && onViewFullMessage && (
+          <PressableIcon
+            icon="expand"
+            size={16}
+            color={theme.colors.tint}
+            onPress={() => onViewFullMessage(message)}
+            containerStyle={themed($viewButton)}
+          />
+        )}
       </Box>
     </View>
   )
@@ -96,4 +107,12 @@ const $aiMessageText: ThemedStyle<TextStyle> = ({ colors }) => ({
 const $modelName: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
   marginBottom: spacing.xxs,
   color: colors.tint,
+  marginRight: spacing.xl,
+})
+
+const $viewButton: ThemedStyle<ViewStyle> = () => ({
+  position: "absolute",
+  top: 8,
+  right: 15,
+  opacity: 0.6,
 })

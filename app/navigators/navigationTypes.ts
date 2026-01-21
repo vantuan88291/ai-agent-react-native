@@ -21,6 +21,7 @@ import { ModelInfo } from "@/screens/ai/hooks/models"
 export type AppStackParamList = {
   Welcome: undefined
   ai: { model: ModelInfo }
+  FullMessage: { message: string; modelName?: string }
   Demo: NavigatorScreenParams<DemoTabParamList>
   // 🔥 Your screens go here
   // IGNITE_GENERATOR_ANCHOR_APP_STACK_PARAM_LIST
@@ -38,4 +39,4 @@ export type DemoTabScreenProps<T extends keyof DemoTabParamList> = CompositeScre
 
 export interface NavigationProps extends Partial<
   ComponentProps<typeof NavigationContainer<AppStackParamList>>
-> {}
+> { }
