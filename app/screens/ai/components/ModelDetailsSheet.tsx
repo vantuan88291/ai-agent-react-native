@@ -1,5 +1,5 @@
 import { forwardRef } from "react"
-import { TextStyle, ViewStyle } from "react-native"
+import { ScrollView, TextStyle, ViewStyle } from "react-native"
 import { BottomSheetModal } from "@gorhom/bottom-sheet"
 
 import { BottomSheetClose } from "@/components/BottomSheetClose"
@@ -15,10 +15,11 @@ interface ModelDetailsSheetProps {
   modelStatus: "not_setup" | "downloading" | "preparing" | "ready"
   onRemoveModel: () => void
   onClearConversation: () => void
+  conversationSummary: string | null
 }
 
 export const ModelDetailsSheet = forwardRef<BottomSheetModal, ModelDetailsSheetProps>(
-  ({ model, modelStatus, onRemoveModel, onClearConversation }, ref) => {
+  ({ model, modelStatus, onRemoveModel, onClearConversation, conversationSummary }, ref) => {
     const { themed } = useAppTheme()
 
     if (!model) return null
@@ -68,6 +69,24 @@ export const ModelDetailsSheet = forwardRef<BottomSheetModal, ModelDetailsSheetP
             />
           </Box>
 
+          {conversationSummary && (
+            <Box style={themed($infoSection)}>
+              <Text
+                text="Conversation Summary"
+                preset="formLabel"
+                size="xs"
+                style={themed($label)}
+              />
+              <ScrollView
+                style={{
+                  height: 150,
+                }}
+              >
+                <Text text={conversationSummary} preset="default" size="xxs" />
+              </ScrollView>
+            </Box>
+          )}
+
           {modelStatus === "ready" && (
             <Box style={themed($buttonSection)}>
               <Button
@@ -96,7 +115,7 @@ const $contentContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
 })
 
 const $infoSection: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  marginBottom: spacing.lg,
+  marginBottom: spacing.xs,
 })
 
 const $label: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({

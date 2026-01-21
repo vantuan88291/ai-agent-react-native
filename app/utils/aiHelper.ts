@@ -1,12 +1,7 @@
 import { llama } from "@react-native-ai/llama"
-import { generateText, streamText } from "ai"
+import { generateText } from "ai"
 
 export interface PromptOptions {
-  /**
-   * Whether to use context history (conversation mode)
-   * If true, messages array will be used instead of single prompt
-   */
-  useContextHistory?: boolean
   /**
    * Array of messages for conversation context
    * Only used if useContextHistory is true
@@ -15,11 +10,6 @@ export interface PromptOptions {
     role: "user" | "assistant"
     content: string
   }>
-  /**
-   * AbortSignal to cancel the request
-   * Useful for cleanup when component unmounts
-   */
-  abortSignal?: AbortSignal
 }
 
 /**
@@ -71,16 +61,15 @@ export const promptAI = async (
     }
 
     // Prepare parameters
-    const params =
-      options?.useContextHistory && options.messages
-        ? {
-            model,
-            messages: options.messages,
-          }
-        : {
-            model,
-            prompt,
-          }
+    const params = options?.messages
+      ? {
+          model,
+          messages: options.messages,
+        }
+      : {
+          model,
+          prompt,
+        }
 
     // Generate full text response (non-streaming)
     // generateText returns full text immediately without streaming

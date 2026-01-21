@@ -39,6 +39,7 @@ export const AiScreen: FC<AppStackScreenProps<"ai">> = function AiScreen() {
     selectedModelName,
     useContextHistory,
     setUseContextHistory,
+    conversationSummary,
   } = useAiChat()
 
   const handleOpenModelDetails = useCallback(() => {
@@ -153,6 +154,7 @@ export const AiScreen: FC<AppStackScreenProps<"ai">> = function AiScreen() {
         modelStatus={modelStatus}
         onRemoveModel={handleRemoveModel}
         onClearConversation={handleClearConversation}
+        conversationSummary={conversationSummary}
       />
     </SafeAreaView>
   )

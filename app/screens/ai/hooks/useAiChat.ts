@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState, useEffect, useMemo } from "react"
-import { FlatList, Keyboard, Platform } from "react-native";
+import { FlatList, Keyboard, Platform } from "react-native"
 import { llama } from "@react-native-ai/llama"
 import { LlamaLanguageModel } from "@react-native-ai/llama/lib/typescript/ai-sdk"
 import { useRoute } from "@react-navigation/native"
@@ -9,6 +9,7 @@ import { DropdownAlertType } from "react-native-dropdownalert"
 import { onAlert } from "@/app"
 import { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { Message, ModelLoadingState, ModelStatus } from "@/screens/ai/hooks/models"
+import { promptAI } from "@/utils/aiHelper"
 import { load, remove, save } from "@/utils/storage"
 
 const SCROLL_DEBOUNCE_MS = 100
@@ -32,6 +33,7 @@ export const useAiChat = () => {
   const [downloadProgress, setDownloadProgress] = useState<number>(0)
   const [selectedModelId, setSelectedModelId] = useState<string | null>(modelId)
   const [useContextHistory, setUseContextHistory] = useState<boolean>(true)
+  const [conversationSummary, setConversationSummary] = useState<string | null>(null)
   const modelRef = useRef<LlamaLanguageModel>(null)
   const msgRef = useRef<any[]>([])
   const isSetupInProgressRef = useRef<boolean>(false)
@@ -403,6 +405,23 @@ export const useAiChat = () => {
     const listMsg: any[] = load(modelId)
     if (listMsg?.length) {
       setMessages(listMsg)
+      promptAI(modelId, "", {
+        messages: [
+          ...listMsg
+            .map((msg) => ({
+              role: msg.isUser ? ("user" as const) : ("assistant" as const),
+              content: msg.text,
+            }))
+            .slice(0, 5),
+          {
+            role: "user",
+            content:
+              "Summarize this conversation in one sentence, using the same language as the conversation.",
+          },
+        ],
+      }).then((data) => {
+        setConversationSummary(data)
+      })
       setTimeout(() => {
         scrollToBottomDebounced()
       }, 500)
@@ -475,5 +494,6 @@ export const useAiChat = () => {
     useContextHistory,
     setUseContextHistory,
     model: modelRef.current,
+    conversationSummary,
   }
 }
