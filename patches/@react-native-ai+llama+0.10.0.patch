@@ -1,0 +1,53 @@
+diff --git a/node_modules/@react-native-ai/llama/src/ai-sdk.ts b/node_modules/@react-native-ai/llama/src/ai-sdk.ts
+index 90407d2..00f3020 100644
+--- a/node_modules/@react-native-ai/llama/src/ai-sdk.ts
++++ b/node_modules/@react-native-ai/llama/src/ai-sdk.ts
+@@ -317,13 +317,16 @@ export class LlamaLanguageModel implements LanguageModelV2 {
+         try {
+           let textId = generateId()
+ 
+-          let state: LLMState = 'none' as LLMState
++          let state: LLMState = 'text' as LLMState
+ 
+           controller.enqueue({
+             type: 'stream-start',
+             warnings: [],
+           })
+-
++          controller.enqueue({
++            type: 'text-start',
++            id: textId,
++          })
+           const result = await context.completion(
+             completionOptions,
+             (tokenData: TokenData) => {
+@@ -363,23 +366,18 @@ export class LlamaLanguageModel implements LanguageModelV2 {
+                       })
+                     }
+ 
+-                    state = 'none'
++                    state = 'text'
++                    textId = generateId()
++                    controller.enqueue({
++                      type: 'text-start',
++                      id: textId,
++                    })
+                     break
+ 
+                   default:
+                     // process regular token
+ 
+                     switch (state) {
+-                      case 'none':
+-                        // start text block
+-                        state = 'text'
+-                        textId = generateId()
+-                        controller.enqueue({
+-                          type: 'text-start',
+-                          id: textId,
+-                        })
+-                        break
+-
+                       case 'text':
+                         // continue text block
+                         controller.enqueue({

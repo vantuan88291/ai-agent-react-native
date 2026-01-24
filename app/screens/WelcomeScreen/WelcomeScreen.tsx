@@ -1,5 +1,11 @@
 import { FC, useCallback, useRef } from "react"
-import { ActivityIndicator, FlatList, ListRenderItem, RefreshControl, ViewStyle } from "react-native"
+import {
+  ActivityIndicator,
+  FlatList,
+  ListRenderItem,
+  RefreshControl,
+  ViewStyle,
+} from "react-native"
 import { BottomSheetModal } from "@gorhom/bottom-sheet"
 import { useFocusEffect, useNavigation } from "@react-navigation/native"
 

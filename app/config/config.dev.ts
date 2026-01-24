@@ -6,5 +6,5 @@
  * https://reactnative.dev/docs/security#storing-sensitive-info
  */
 export default {
-  API_URL: "https://reactnative.dev/api/",
+  API_URL: "https://apvplus-cms-dev.apricusventures.sg/api/",
 }

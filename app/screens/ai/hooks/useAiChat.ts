@@ -3,7 +3,7 @@ import { FlatList, Keyboard, Platform } from "react-native"
 import { llama } from "@react-native-ai/llama"
 import { LlamaLanguageModel } from "@react-native-ai/llama/lib/typescript/ai-sdk"
 import { useRoute } from "@react-navigation/native"
-import { generateText } from "ai"
+import { streamText } from "ai";
 import { DropdownAlertType } from "react-native-dropdownalert"
 
 import { onAlert } from "@/app"
@@ -13,6 +13,7 @@ import { promptAI } from "@/utils/aiHelper"
 import { load, remove, save } from "@/utils/storage"
 
 const SCROLL_DEBOUNCE_MS = 100
+const SCROLL_THROTTLE_MS = 200
 
 const ERROR_MESSAGE = "Sorry, an error occurred. Please try again."
 
@@ -72,10 +73,10 @@ export const useAiChat = () => {
     // Calculate messages for context (before state update)
     const messagesWithNewUser = [...messages, userMessage, aiMessage]
 
-    setMessages((prev) => [...prev, userMessage, aiMessage])
+    await setMessages((prev) => [...prev, userMessage, aiMessage])
     setIsLoading(true)
 
-    scrollToBottomDebounced()
+    listRef.current?.scrollToEnd({ animated: true })
 
     // Create abort controller for cleanup
     const abortController = new AbortController()
@@ -102,9 +103,32 @@ export const useAiChat = () => {
             model,
             prompt: userMessageText,
           }
-      const { text } = await generateText(streamParams)
-      setMessages((prev) => prev.map((msg) => (msg.id === aiMessageId ? { ...msg, text } : msg)))
-      scrollToBottomDebounced()
+      const { textStream } = streamText(streamParams)
+
+      let fullText = ""
+      let lastScrollTime = 0
+      let started = false
+      // Stream and update message as text comes in
+      for await (const delta of textStream) {
+        if (!started) {
+          fullText = delta
+          started = true
+        } else {
+          fullText += delta
+        }
+
+        // Update AI message with streaming text
+        setMessages((prev) =>
+          prev.map((msg) => (msg.id === aiMessageId ? { ...msg, text: fullText } : msg)),
+        )
+
+        // Throttle scroll updates during streaming
+        const now = Date.now()
+        if (now - lastScrollTime > SCROLL_THROTTLE_MS) {
+          scrollToBottomDebounced()
+          lastScrollTime = now
+        }
+      }
 
       if (isMountedRef.current && !abortController.signal.aborted) {
         setIsLoading(false)
