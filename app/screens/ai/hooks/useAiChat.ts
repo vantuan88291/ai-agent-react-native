@@ -13,7 +13,6 @@ import { promptAI } from "@/utils/aiHelper"
 import { load, remove, save } from "@/utils/storage"
 
 const SCROLL_DEBOUNCE_MS = 100
-const SCROLL_THROTTLE_MS = 200
 
 const ERROR_MESSAGE = "Sorry, an error occurred. Please try again."
 
@@ -51,7 +50,8 @@ export const useAiChat = () => {
   const scrollToBottomDebounced = useCallback(() => {
     if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current)
     scrollTimeoutRef.current = setTimeout(() => {
-      if (isMountedRef.current) listRef.current?.scrollToEnd({ animated: true })
+      // When `FlatList` is inverted, offset 0 is the "bottom" (latest message)
+      if (isMountedRef.current) listRef.current?.scrollToOffset({ offset: 0, animated: true })
     }, SCROLL_DEBOUNCE_MS)
   }, [])
 
@@ -70,14 +70,15 @@ export const useAiChat = () => {
     const aiMessage = createMessage("", false)
     const aiMessageId = aiMessage.id
 
-    // Calculate messages for context (before state update)
-    const messagesWithNewUser = [...messages, userMessage, aiMessage]
+    // Our `messages` state is newest-first for `FlatList inverted`.
+    // Build chronological list only for AI context.
+    const chronological = [...messages].reverse()
+    const messagesWithNewUser = [...chronological, userMessage, aiMessage]
 
-    await setMessages((prev) => [...prev, userMessage, aiMessage])
+    // Add newest-first: AI placeholder is newest (bottom), then user message, then existing
+    await setMessages((prev) => [aiMessage, userMessage, ...prev])
     setIsLoading(true)
-
-    listRef.current?.scrollToEnd({ animated: true })
-
+    listRef.current?.scrollToOffset({ offset: 0, animated: true })
     // Create abort controller for cleanup
     const abortController = new AbortController()
     streamAbortControllerRef.current = abortController
@@ -106,7 +107,6 @@ export const useAiChat = () => {
       const { textStream } = streamText(streamParams)
 
       let fullText = ""
-      let lastScrollTime = 0
       let started = false
       // Stream and update message as text comes in
       for await (const delta of textStream) {
@@ -121,18 +121,10 @@ export const useAiChat = () => {
         setMessages((prev) =>
           prev.map((msg) => (msg.id === aiMessageId ? { ...msg, text: fullText } : msg)),
         )
-
-        // Throttle scroll updates during streaming
-        const now = Date.now()
-        if (now - lastScrollTime > SCROLL_THROTTLE_MS) {
-          scrollToBottomDebounced()
-          lastScrollTime = now
-        }
       }
 
       if (isMountedRef.current && !abortController.signal.aborted) {
         setIsLoading(false)
-        scrollToBottomDebounced()
       }
     } catch (error) {
       if (!isMountedRef.current || abortController.signal.aborted) {
@@ -146,7 +138,6 @@ export const useAiChat = () => {
       )
 
       setIsLoading(false)
-      scrollToBottomDebounced()
     } finally {
       streamAbortControllerRef.current = null
     }
@@ -428,7 +419,8 @@ export const useAiChat = () => {
     // @ts-ignore
     const listMsg: any[] = load(modelId)
     if (listMsg?.length) {
-      setMessages(listMsg)
+      // Storage is assumed chronological; state is newest-first
+      setMessages([...listMsg].reverse())
       promptAI(modelId, "", {
         messages: [
           ...listMsg
@@ -446,9 +438,6 @@ export const useAiChat = () => {
       }).then((data) => {
         setConversationSummary(data)
       })
-      setTimeout(() => {
-        scrollToBottomDebounced()
-      }, 500)
     }
     function onKeyboardDidShow() {
       setTimeout(() => {
@@ -462,7 +451,8 @@ export const useAiChat = () => {
     return () => {
       showSubscription.remove()
       if (msgRef.current?.length) {
-        save(modelId, msgRef.current)
+        // Persist chronological for compatibility
+        save(modelId, [...msgRef.current].reverse())
       }
       msgRef.current = []
       isMountedRef.current = false

@@ -113,12 +113,13 @@ export const AiScreen: FC<AppStackScreenProps<"ai">> = function AiScreen() {
           <Box flex={1} style={themed($containerBox)}>
             <FlatList
               ref={listRef}
+              inverted
               data={messages}
               renderItem={renderMessage}
               keyExtractor={keyExtractor}
-              removeClippedSubviews
               contentContainerStyle={themed($listContent)}
               showsVerticalScrollIndicator={true}
+              keyboardDismissMode="on-drag"
               keyboardShouldPersistTaps="handled"
               ListEmptyComponent={renderEmptyState}
             />
@@ -190,4 +191,5 @@ const $emptyStateContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   justifyContent: "center",
   alignItems: "center",
   paddingVertical: spacing.xl,
+  transform: [{ rotateY: "180deg" }, { scaleX: -1 }, { scaleY: -1 }],
 })
