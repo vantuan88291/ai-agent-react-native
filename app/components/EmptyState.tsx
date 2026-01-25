@@ -7,7 +7,7 @@ import type { ThemedStyle } from "@/theme/types"
 import { ButtonProps } from "./Button"
 import { Text, TextProps } from "./Text"
 
-const sadFace = require("@assets/images/sad-face.png")
+const sadFace = require("@assets/images/app-icon-all.png")
 
 interface EmptyStateProps {
   /**
@@ -145,11 +145,9 @@ export function EmptyState(props: EmptyStateProps) {
     headingTxOptions,
     imageSource = preset.imageSource,
     style: $containerStyleOverride,
-    buttonStyle: $buttonStyleOverride,
     contentStyle: $contentStyleOverride,
     headingStyle: $headingStyleOverride,
     imageStyle: $imageStyleOverride,
-    ButtonProps,
     ContentTextProps,
     HeadingTextProps,
     ImageProps,
@@ -184,14 +182,7 @@ export function EmptyState(props: EmptyStateProps) {
 
   return (
     <View style={$containerStyles}>
-      {isImagePresent && (
-        <Image
-          source={imageSource}
-          {...ImageProps}
-          style={$imageStyles}
-          tintColor={theme.colors.palette.neutral900}
-        />
-      )}
+      {isImagePresent && <Image source={imageSource} {...ImageProps} style={$imageStyles} />}
 
       {isHeadingPresent && (
         <Text
@@ -217,7 +208,7 @@ export function EmptyState(props: EmptyStateProps) {
   )
 }
 
-const $image: ImageStyle = { alignSelf: "center" }
+const $image: ImageStyle = { alignSelf: "center", width: 160, height: 160 }
 const $heading: ThemedStyle<TextStyle> = ({ spacing }) => ({
   textAlign: "center",
   paddingHorizontal: spacing.lg,

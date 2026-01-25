@@ -61,7 +61,11 @@ export const ChatInput = ({
               inputOuterStyle={themed($checkboxSquare)}
             />
             <Text
-              text={`Conversation history (${totalToken}${remainTokens ? `/${remainTokens}` : ""} tokens)`}
+              text={
+                !totalToken
+                  ? "Conversation history"
+                  : `Conversation history (${totalToken}${remainTokens && useContextHistory ? `/${remainTokens}` : ""} tokens)`
+              }
               preset="default"
               size="xs"
               style={themed($toggleLabel)}

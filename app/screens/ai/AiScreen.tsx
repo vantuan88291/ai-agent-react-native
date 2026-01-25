@@ -41,7 +41,7 @@ export const AiScreen: FC<AppStackScreenProps<"ai">> = function AiScreen() {
     setUseContextHistory,
     conversationSummary,
     totalToken,
-    remainTokens
+    remainTokens,
   } = useAiChat()
 
   const handleOpenModelDetails = useCallback(() => {
