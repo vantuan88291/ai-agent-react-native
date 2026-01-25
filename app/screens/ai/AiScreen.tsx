@@ -40,6 +40,8 @@ export const AiScreen: FC<AppStackScreenProps<"ai">> = function AiScreen() {
     useContextHistory,
     setUseContextHistory,
     conversationSummary,
+    totalToken,
+    remainTokens
   } = useAiChat()
 
   const handleOpenModelDetails = useCallback(() => {
@@ -131,6 +133,8 @@ export const AiScreen: FC<AppStackScreenProps<"ai">> = function AiScreen() {
                 />
               ) : (
                 <ChatInput
+                  totalToken={totalToken}
+                  remainTokens={remainTokens}
                   inputText={inputText}
                   setInputText={setInputText}
                   handleSend={handleSend}

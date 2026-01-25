@@ -21,6 +21,7 @@ const createMessage = (text: string, isUser: boolean): Message => ({
   isUser,
   timestamp: new Date(),
   includeInContext: true,
+  remainTokens: 0,
 })
 
 const isContextFullError = (error: unknown) => {
@@ -167,8 +168,18 @@ export const useAiChat = () => {
         // No multi-retry: if context is full, drop everything except last 3 + current user, then try once.
         if (useContextHistory && isContextFullError(error)) {
           pruneContextToLatest(KEEP_LATEST_CONTEXT_MESSAGES)
+          const totalTokens = messages
+            .filter((item) => item.includeInContext)
+            .map((item) => item.text)
+            .join("").length
           // Clear placeholder before fallback attempt
-          setMessages((prev) => prev.map((m) => (m.id === aiMessageId ? { ...m, text: "" } : m)))
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === aiMessageId
+                ? { ...m, text: "", remainTokens: totalTokens }
+                : { ...m, remainTokens: totalTokens },
+            ),
+          )
           await runStreamOnce()
         } else {
           throw error
@@ -194,7 +205,6 @@ export const useAiChat = () => {
       streamAbortControllerRef.current = null
     }
   }, [inputText, isLoading, modelStatus, scrollToBottomDebounced, useContextHistory, messages])
-
   /**
    * Check if model is already downloaded/prepared
    */
@@ -548,6 +558,10 @@ export const useAiChat = () => {
   const selectedModelName = useMemo(() => {
     return model?.name || null
   }, [model])
+  const totalToken = messages
+    .filter((item) => item.includeInContext)
+    .map((item) => item.text)
+    .join("").length
 
   return {
     messages,
@@ -570,5 +584,7 @@ export const useAiChat = () => {
     setUseContextHistory,
     model: modelRef.current,
     conversationSummary,
+    totalToken,
+    remainTokens: messages?.[messages?.length - 1]?.remainTokens,
   }
 }

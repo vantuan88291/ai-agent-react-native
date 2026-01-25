@@ -20,6 +20,8 @@ interface ChatInputProps {
   onSetupModelPress: () => void
   useContextHistory: boolean
   onToggleContextHistory: (value: boolean) => void
+  totalToken: number
+  remainTokens?: number
 }
 
 export const ChatInput = ({
@@ -30,15 +32,19 @@ export const ChatInput = ({
   onSetupModelPress,
   useContextHistory,
   onToggleContextHistory,
+  totalToken,
+  remainTokens,
 }: ChatInputProps) => {
   const { theme, themed } = useAppTheme()
   const insets = useSafeAreaInsets()
 
-  // Show setup button if model not ready
-  if (modelStatus === "not_setup") {
-    return (
-      <Box backgroundColor={theme.colors.background} style={themed($inputContainer)}>
-        <Row style={themed($setupButtonRow)} alignItems="center" justifyContent="center">
+  return (
+    <Box
+      backgroundColor={theme.colors.background}
+      style={[themed($inputContainer), { paddingBottom: insets.bottom / 2 }]}
+    >
+      {modelStatus === "not_setup" ? (
+        <Row style={themed($setupButtonRow)} justifyContent="center">
           <Button
             onPress={onSetupModelPress}
             preset="filled"
@@ -46,58 +52,53 @@ export const ChatInput = ({
             style={themed($setupButton)}
           />
         </Row>
-      </Box>
-    )
-  }
-  // Normal chat input when model is ready
-  return (
-    <Box
-      backgroundColor={theme.colors.background}
-      style={[themed($inputContainer), { paddingBottom: insets.bottom }]}
-    >
-      <Row style={themed($toggleRow)} alignItems="center" gap={spacing.xs}>
-        <Checkbox
-          value={useContextHistory}
-          onValueChange={onToggleContextHistory}
-          inputOuterStyle={themed($checkboxSquare)}
-        />
-        <Text
-          text="Enable to remember conversation history"
-          preset="default"
-          size="xs"
-          style={themed($toggleLabel)}
-        />
-      </Row>
-      <Row style={themed($inputRow)} gap={spacing.xs}>
-        <Box style={themed($textFieldWrapper)}>
-          <TextField
-            placeholder="Type your message..."
-            value={inputText}
-            onChangeText={setInputText}
-            multiline
-            keyboardType="default"
-            containerStyle={themed($textFieldContainer)}
-            inputWrapperStyle={themed($textFieldInputWrapper)}
-            style={themed($textFieldInput)}
-          />
-        </Box>
-        <Button
-          preset="default"
-          onPress={handleSend}
-          disabled={!inputText.trim()}
-          style={
-            !inputText.trim()
-              ? [themed($sendButton), themed($sendButtonDisabled)]
-              : [themed($sendButton), themed($sendButtonActive)]
-          }
-        >
-          <Icon
-            icon="send"
-            size={20}
-            color={inputText.trim() ? theme.colors.palette.neutral100 : theme.colors.textDim}
-          />
-        </Button>
-      </Row>
+      ) : (
+        <>
+          <Row style={themed($toggleRow)} alignItems="center" gap={spacing.xs}>
+            <Checkbox
+              value={useContextHistory}
+              onValueChange={onToggleContextHistory}
+              inputOuterStyle={themed($checkboxSquare)}
+            />
+            <Text
+              text={`Conversation history (${totalToken}${remainTokens ? `/${remainTokens}` : ""} tokens)`}
+              preset="default"
+              size="xs"
+              style={themed($toggleLabel)}
+            />
+          </Row>
+          <Row style={themed($inputRow)} gap={spacing.xs}>
+            <Box style={themed($textFieldWrapper)}>
+              <TextField
+                placeholder="Type your message..."
+                value={inputText}
+                onChangeText={setInputText}
+                multiline
+                keyboardType="default"
+                containerStyle={themed($textFieldContainer)}
+                inputWrapperStyle={themed($textFieldInputWrapper)}
+                style={themed($textFieldInput)}
+              />
+            </Box>
+            <Button
+              preset="default"
+              onPress={handleSend}
+              disabled={!inputText.trim()}
+              style={
+                !inputText.trim()
+                  ? [themed($sendButton), themed($sendButtonDisabled)]
+                  : [themed($sendButton), themed($sendButtonActive)]
+              }
+            >
+              <Icon
+                icon="send"
+                size={20}
+                color={inputText.trim() ? theme.colors.palette.neutral100 : theme.colors.textDim}
+              />
+            </Button>
+          </Row>
+        </>
+      )}
     </Box>
   )
 }
