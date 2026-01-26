@@ -1,5 +1,5 @@
 import { forwardRef, ReactNode, MutableRefObject, useCallback } from "react"
-import { ViewStyle, Image, Dimensions, TouchableOpacity, ImageStyle } from "react-native"
+import { ViewStyle, Image, Dimensions, TouchableOpacity, ImageStyle, TextStyle } from "react-native"
 import {
   BottomSheetModal,
   BottomSheetModalProps,
@@ -58,14 +58,20 @@ export const BottomSheetClose = forwardRef<BottomSheetModal, BottomSheetProps>(
       titleCenter,
       height,
       disableExpand,
+      disableScrollContent = false,
       noLine = false,
       containerStyle,
       titlePreset,
       enableScrollForKeyboard = false,
     } = props
+
+    // Determine which container to use for children
+    // - enableScrollForKeyboard: KeyboardAwareScrollView
+    // - disableExpand OR disableScrollContent: Box (no scroll, children handle their own scroll)
+    // - default: BottomSheetScrollView
     const ViewChildren = enableScrollForKeyboard
       ? KeyboardAwareScrollView
-      : props.disableExpand
+      : disableExpand || disableScrollContent
         ? Box
         : BottomSheetScrollView
 
@@ -160,11 +166,12 @@ export const BottomSheetClose = forwardRef<BottomSheetModal, BottomSheetProps>(
           <ViewChildren
             style={[
               !props?.bottomComponent && { paddingBottom: insets.bottom },
-              !disableExpand && {
-                height: height,
-              },
+              !disableExpand &&
+                !disableScrollContent && {
+                  height: height,
+                },
             ]}
-            scrollEnabled={!disableExpand || enableScrollForKeyboard}
+            scrollEnabled={(!disableExpand && !disableScrollContent) || enableScrollForKeyboard}
             keyboardShouldPersistTaps="handled"
           >
             {props.children}

@@ -11,6 +11,16 @@ export interface Message {
   includeInContext?: boolean
 }
 
+export interface ConversationMeta {
+  id: string
+  modelId: string
+  title: string | null
+  createdAt: string
+  updatedAt: string
+  summary?: string | null
+  lastMessagePreview?: string | null
+}
+
 export type ModelLoadingState = "idle" | "downloading" | "preparing"
 export type ModelStatus = "not_setup" | "downloading" | "preparing" | "ready"
 
@@ -19,6 +29,12 @@ export interface ModelInfo {
   name: string
   size: string
 }
+
+// Storage key helpers
+export const getConversationListKey = (modelId: string) => `ai.model.${modelId}.conversations`
+export const getMessagesKey = (conversationId: string) =>
+  `ai.conversation.${conversationId}.messages`
+export const getLastConversationKey = (modelId: string) => `ai.model.${modelId}.lastConversationId`
 
 export const AVAILABLE_MODELS: ModelInfo[] = [
   // TinyGemma3 - Smallest models

@@ -1,9 +1,8 @@
 import { useCallback, useRef, useState, useEffect, useMemo } from "react"
 import { FlatList, Keyboard, Platform } from "react-native"
 
-import { Message } from "@/screens/ai/hooks/models"
-import { promptAI } from "@/utils/aiHelper"
-import { load, remove, save } from "@/utils/storage"
+import { Message, getMessagesKey } from "@/screens/ai/hooks/models"
+import { load, save } from "@/utils/storage"
 
 const SCROLL_DEBOUNCE_MS = 100
 
@@ -17,19 +16,31 @@ export const createMessage = (text: string, isUser: boolean): Message => ({
 })
 
 interface UseMessagesOptions {
-  modelId?: string
+  conversationId?: string | null
+  onMessagesChange?: (messages: Message[]) => void
 }
 
 export const useMessages = (options: UseMessagesOptions = {}) => {
-  const { modelId } = options
+  const { conversationId, onMessagesChange } = options
 
   const [messagesState, setMessagesState] = useState<Message[]>([])
-  const [conversationSummary, setConversationSummary] = useState<string | null>(null)
 
   const msgRef = useRef<Message[]>([])
   const listRef = useRef<FlatList<Message>>(null)
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isMountedRef = useRef<boolean>(true)
+  const prevConversationIdRef = useRef<string | null | undefined>(undefined)
+  const onMessagesChangeRef = useRef(onMessagesChange)
+  const conversationIdRef = useRef(conversationId)
+
+  // Keep refs in sync
+  useEffect(() => {
+    onMessagesChangeRef.current = onMessagesChange
+  }, [onMessagesChange])
+
+  useEffect(() => {
+    conversationIdRef.current = conversationId
+  }, [conversationId])
 
   // Custom setMessages that syncs msgRef immediately
   const setMessages = useCallback((updater: React.SetStateAction<Message[]>) => {
@@ -56,20 +67,23 @@ export const useMessages = (options: UseMessagesOptions = {}) => {
   }, [])
 
   /**
-   * Clear all conversation messages
+   * Save messages to storage - uses refs to maintain stable reference
    */
-  const clearConversation = useCallback(() => {
-    if (!modelId) return
+  const saveMessages = useCallback(() => {
+    const currentConvId = conversationIdRef.current
+    if (!currentConvId || !msgRef.current?.length) return
 
-    setMessages([])
-    msgRef.current = []
+    const storageKey = getMessagesKey(currentConvId)
+    save(
+      storageKey,
+      [...msgRef.current]
+        .map((m) => ({ ...m, includeInContext: m?.includeInContext !== false }))
+        .reverse(),
+    )
 
-    try {
-      remove(modelId)
-    } catch (error) {
-      console.error("[useMessages] Failed to clear conversation:", error)
-    }
-  }, [modelId, setMessages])
+    // Notify parent about changes (for updating conversation meta)
+    onMessagesChangeRef.current?.(msgRef.current)
+  }, []) // Empty deps - uses refs for latest values
 
   /**
    * Update a specific message by ID
@@ -109,14 +123,28 @@ export const useMessages = (options: UseMessagesOptions = {}) => {
   }, [messages])
 
   /**
-   * Load messages and setup keyboard listener on mount
+   * Load messages when conversationId changes
    */
   useEffect(() => {
     isMountedRef.current = true
 
-    // Load persisted messages (only if modelId exists)
-    if (modelId) {
-      const listMsg = load<Message[]>(modelId) || []
+    // Save previous conversation messages before switching
+    if (prevConversationIdRef.current && prevConversationIdRef.current !== conversationId) {
+      const prevKey = getMessagesKey(prevConversationIdRef.current)
+      if (msgRef.current?.length) {
+        save(
+          prevKey,
+          [...msgRef.current]
+            .map((m) => ({ ...m, includeInContext: m?.includeInContext !== false }))
+            .reverse(),
+        )
+      }
+    }
+
+    // Load messages for new conversation
+    if (conversationId) {
+      const storageKey = getMessagesKey(conversationId)
+      const listMsg = load<Message[]>(storageKey) || []
       if (listMsg?.length) {
         // Storage is chronological; state is newest-first
         setMessages(
@@ -124,29 +152,14 @@ export const useMessages = (options: UseMessagesOptions = {}) => {
             .map((m) => ({ ...m, includeInContext: m?.includeInContext !== false }))
             .reverse(),
         )
-
-        // Generate conversation summary
-        promptAI(modelId, "", {
-          messages: [
-            ...listMsg
-              .map((msg) => ({
-                role: msg.isUser ? ("user" as const) : ("assistant" as const),
-                content: msg.text,
-              }))
-              .slice(0, 5),
-            {
-              role: "user",
-              content:
-                "Summarize this conversation in one sentence, using the same language as the conversation.",
-            },
-          ],
-        }).then((data) => {
-          if (isMountedRef.current) {
-            setConversationSummary(data)
-          }
-        })
+      } else {
+        setMessages([])
       }
+    } else {
+      setMessages([])
     }
+
+    prevConversationIdRef.current = conversationId
 
     // Keyboard listener for auto-scroll
     function onKeyboardDidShow() {
@@ -163,10 +176,11 @@ export const useMessages = (options: UseMessagesOptions = {}) => {
     return () => {
       showSubscription.remove()
 
-      // Persist messages on unmount (only if modelId exists)
-      if (modelId && msgRef.current?.length) {
+      // Persist messages on unmount
+      if (conversationId && msgRef.current?.length) {
+        const storageKey = getMessagesKey(conversationId)
         save(
-          modelId,
+          storageKey,
           [...msgRef.current]
             .map((m) => ({ ...m, includeInContext: m?.includeInContext !== false }))
             .reverse(),
@@ -182,7 +196,7 @@ export const useMessages = (options: UseMessagesOptions = {}) => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modelId])
+  }, [conversationId])
 
   return {
     messages,
@@ -190,12 +204,11 @@ export const useMessages = (options: UseMessagesOptions = {}) => {
     listRef,
     msgRef,
     isMountedRef,
-    clearConversation,
     updateMessage,
     prependMessages,
     scrollToBottom,
     scrollToBottomDebounced,
-    conversationSummary,
+    saveMessages,
     totalToken,
     remainTokens,
   }

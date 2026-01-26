@@ -34,15 +34,21 @@ export const AiScreen: FC<AppStackScreenProps<"ai">> = function AiScreen() {
     downloadProgress,
     setupModel,
     removeModel,
-    clearConversation,
     selectedModel,
     selectedModelId,
     selectedModelName,
     useContextHistory,
     setUseContextHistory,
-    conversationSummary,
     totalToken,
     remainTokens,
+    // Conversations
+    conversations,
+    activeConversationId,
+    conversationTitle,
+    createConversation,
+    selectConversation,
+    deleteConversation,
+    generateMissingTitles,
   } = useAiChat()
 
   const isModelLoading = modelLoadingState !== "idle"
@@ -54,8 +60,10 @@ export const AiScreen: FC<AppStackScreenProps<"ai">> = function AiScreen() {
   const handleOpenModelDetails = useCallback(() => {
     if (modelLoadingState === "idle") {
       modelDetailsSheetRef.current?.present()
+      // Generate missing titles when opening the sheet
+      generateMissingTitles()
     }
-  }, [modelLoadingState])
+  }, [modelLoadingState, generateMissingTitles])
 
   const handleSetupModel = useCallback(() => {
     if (selectedModelId) {
@@ -100,11 +108,14 @@ export const AiScreen: FC<AppStackScreenProps<"ai">> = function AiScreen() {
     )
   }, [isModelLoading, themed])
 
+  // Header title: show conversation title if available
+  const headerTitle = conversationTitle || "AI Assistant"
+
   return (
     <SafeAreaView style={$styles.flex1} edges={["bottom"]}>
       <View style={themed($screen)}>
         <Header
-          title="AI Assistant"
+          title={headerTitle}
           leftIcon="back"
           onLeftPress={handleGoBack}
           rightIcon={!isModelLoading ? "more" : undefined}
@@ -162,8 +173,11 @@ export const AiScreen: FC<AppStackScreenProps<"ai">> = function AiScreen() {
         model={selectedModel}
         modelStatus={modelStatus}
         onRemoveModel={removeModel}
-        onClearConversation={clearConversation}
-        conversationSummary={conversationSummary}
+        conversations={conversations}
+        activeConversationId={activeConversationId}
+        onSelectConversation={selectConversation}
+        onDeleteConversation={deleteConversation}
+        onNewConversation={createConversation}
       />
     </SafeAreaView>
   )

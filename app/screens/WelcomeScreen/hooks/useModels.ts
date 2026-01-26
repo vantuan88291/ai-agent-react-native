@@ -1,7 +1,14 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { llama } from "@react-native-ai/llama"
 
-import { AVAILABLE_MODELS, ModelInfo } from "@/screens/ai/hooks/models"
+import {
+  AVAILABLE_MODELS,
+  ModelInfo,
+  ConversationMeta,
+  getConversationListKey,
+  getMessagesKey,
+  getLastConversationKey,
+} from "@/screens/ai/hooks/models"
 import { fetchAiModels } from "@/services/api"
 import { load, remove, save } from "@/utils/storage"
 
@@ -176,11 +183,25 @@ export const useModels = () => {
         const model = llama.languageModel(modelId)
         await model.remove()
 
-        // Remove conversation history if exists
+        // Remove all conversations for this model
         try {
+          // Load conversation list
+          const listKey = getConversationListKey(modelId)
+          const conversations = load<ConversationMeta[]>(listKey) || []
+
+          // Remove all message keys for each conversation
+          conversations.forEach((conv) => {
+            remove(getMessagesKey(conv.id))
+          })
+
+          // Remove conversation list and last conversation keys
+          remove(listKey)
+          remove(getLastConversationKey(modelId))
+
+          // Also try to remove legacy key (if exists from before migration)
           remove(modelId)
         } catch (error) {
-          console.error(`[useModels] Error removing conversation history for ${modelId}:`, error)
+          console.error(`[useModels] Error removing conversations for ${modelId}:`, error)
         }
 
         // Refresh download status after removal
